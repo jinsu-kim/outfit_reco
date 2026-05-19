@@ -13,8 +13,6 @@ In production systems, recommendation pipelines must enforce:
 - valid outfit combination
 - brand/site isolation
 
-This repository demonstrates how these orchestration constraints can be handled in a batch recommendation pipeline.
-
 ---
 
 # Pipeline Flow
