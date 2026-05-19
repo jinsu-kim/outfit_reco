@@ -20,7 +20,7 @@ In production systems, recommendation pipelines must enforce:
 ```text
 Backend-triggered Batch Request
     ↓
-Metadata Validation
+Item Validation
     ↓
 Candidate Filtering
     ↓
