@@ -11,12 +11,6 @@ from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 import numpy as np
 import pandas as pd
 
-# current time
-current_time = datetime.now()
-current_year = int(current_time.strftime('%Y'))
-current_month = current_time.strftime('%m')
-update_dates = [(current_time + timedelta(days=-1 * d)).strftime('%Y-%m-%d') for d in range(7)]  # 7 최근 일주일간 업데이트 된 상품들에 대해서 업데이트
-
 SLACK_WEBHOOK_URL = ""
 VALID_GENDERS        = {"MALE", "FEMALE", "UNISEX"}
 VALID_AGE            = {"ADULT", "JUNIOR", "CHILD"}
@@ -91,7 +85,7 @@ def validate_items(items: pd.DataFrame, site_id: str) -> Tuple[pd.DataFrame, pd.
             failure_rows.append({"item_id": row["item_id"], "name": row['product_name'], "reason": reason})
         valid_mask &= ~mask
 
-    for col in ["item_id", "brand", "category1", "category2", "gender", "season", "image_url"]:
+    for col in ["item_id", "created", "updated", "brand", "category1", "category2", "gender", "season", "image_url"]:
         mark_invalid(df[col].eq(""), f"missing_{col}")
 
     mark_invalid(~df["gender"].isin(VALID_GENDERS),                "invalid_gender")
@@ -104,12 +98,14 @@ def validate_items(items: pd.DataFrame, site_id: str) -> Tuple[pd.DataFrame, pd.
 
 def filter_outfit_seed(
         valid_table: pd.DataFrame,
-        curr_season: str) -> pd.DataFrame:
+        curr_season: str,
+        update_dates: List[str]) -> pd.DataFrame:
     """Select seed items for outfit generation."""
 
     df         = valid_table.copy()
     seed_items = df[(df['season'].contains(curr_season)) &
-                    (df['selling_status'] == 'DISPLAY')].reset_index(drop=True)
+                    (df['selling_status'] == 'DISPLAY')
+                    (df['updated']).isin(update_dates)].reset_index(drop=True)
 
     return seed_items
 
@@ -316,9 +312,9 @@ def run_batch(
         guidelines_json: str | Path,
         compatibility_npy: Optional[str | Path],
         out_dir: str | Path,
+        update_dates: List[str],
         num_styles: int = 3,
-        min_candidates_per_slot: int = 1,
-        ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        min_candidates_per_slot: int = 1) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run the full batch pipeline and write outputs."""
 
     out_dir = Path(out_dir)
@@ -338,7 +334,7 @@ def run_batch(
         )
 
     current_season = get_season_from_month(month)
-    seed_items     = filter_outfit_seed(valid_items, current_season)
+    seed_items     = filter_outfit_seed(valid_items, current_season, update_dates)
 
     guidelines = load_guidelines(guidelines_json)
     compatibility = np.load(compatibility_npy)
@@ -387,71 +383,25 @@ def run_batch(
     return recommendations, failure_report, valid_items
 
 
-def make_sample_files(out_dir: str | Path) -> None:
-    """Create a small runnable sample dataset."""
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    rows = [
-        ["181001", "2138247", "2021-07-14", "2021-08-03", "brand_name", "상의", "티셔츠", "MALE", '["SPRING","SUMMER"]', "VALID", "VALID", "https://example.com/181001.png", "오버핏 반팔 티셔츠"],
-        ["181002", "2138247", "2021-06-02", "2021-06-28", "brand_name", "하의", "팬츠", "MALE", '["SPRING","SUMMER"]', "VALID", "VALID", "https://example.com/181002.png", "와이드 팬츠"],
-        ["181003", "2138247", "2021-07-21", "2021-07-30", "brand_name", "하의", "쇼츠", "MALE", '["SUMMER"]', "VALID", "VALID", "https://example.com/181003.png", "버뮤다 쇼츠"],
-        ["181004", "2138247", "2021-05-17", "2021-06-11", "brand_name", "신발", "스니커즈", "MALE", '["SUMMER"]', "VALID", "VALID", "https://example.com/181004.png", "화이트 스니커즈"],
-        ["181005", "2138247", "2021-08-09", "2021-08-25", "brand_name", "상의", "셔츠", "MALE", '["SUMMER"]', "VALID", "VALID", "https://example.com/181005.png", "린넨 셔츠"],
-        ["181006", "2138247", "2021-04-13", "2021-05-01", "brand_name", "하의", "팬츠", "MALE", '["SUMMER"]', "VALID", "VALID", "https://example.com/181006.png", "카고 팬츠"],
-        ["181007", "2138247", "2021-07-05", "2021-07-19", "brand_name", "신발", "샌들", "UNISEX", '["SUMMER"]', "VALID", "VALID", "https://example.com/181007.png", "레더 샌들"],
-        ["181008", "2138247", "2021-11-02", "2021-11-18", "brand_name", "아우터", "코트", "MALE", '["WINTER"]', "VALID", "VALID", "https://example.com/181008.png", "울 코트"],
-        ["181009", "2138247", "2021-08-01", "2021-08-14", "brand_name", "상의", "니트", "MALE", '["WINTER"]', "VALID", "VALID", "https://example.com/181009.png", "라운드 니트"],
-        ["181010", "2138247", "2021-10-23", "2021-11-07", "brand_name", "하의", "팬츠", "MALE", '["SUMMER"]', "VALID", "VALID", "https://example.com/181010.png", "울 팬츠"],
-        ["181011", "2138247", "2021-07-11", "2021-07-23", "brand_name", "신발", "슬립온", "MALE", '["SUMMER"]', "VALID", "VALID","https://example.com/181011.png", "블랙 슬립온"],
-        ["181012", "2138247", "2021-07-08", "2021-07-09", "brand_name", "신발", "구두", "MALE", '["SUMMER"]', "VALID", "VALID","https://example.com/181012.png", "콤포트 더비"]
-    ]
-    items = pd.DataFrame(
-        rows,
-        columns=["item_id", "site_id", "created", "updated", "brand",
-                 "category1", "category2", "gender", "season", "status",
-                 "selling_status", "image_url", "product_name"],
-    )
-    items.to_csv(out_dir / "item_table.csv", index=False, encoding="utf-8-sig")
-
-    guidelines = {
-        "SUMMER": [
-            {"상의": ["티셔츠", "셔츠"], "하의": ["팬츠", "쇼츠"], "신발": ["샌들"]},
-            {"상의": ["티셔츠"], "하의": ["쇼츠"], "신발": ["샌들"]},
-            {"상의": ["셔츠"], "하의": ["팬츠"], "신발": ["구두"]},
-        ],
-        "WINTER": [
-            {"아우터": ["코트"], "상의": ["니트"], "하의": ["팬츠"], "신발": ["구두"]}
-        ],
-    }
-    with open(out_dir / "outfit_guidelines.json", "w", encoding="utf-8") as f:
-        json.dump(guidelines, f, ensure_ascii=False, indent=2)
-
-    print(f"Sample files written to: {out_dir}")
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description="Constraint-aware fashion outfit batch pipeline")
-    parser.add_argument("--items_csv",          type=str,                      help="Path to item table CSV")
-    parser.add_argument("--sitd_id",            type=str,                      help="Brand/site identifier")
-    parser.add_argument("--guidelines_json",    type=str,                      help="Path to outfit guideline JSON")
-    parser.add_argument("--compatibility_npy",  type=str, default=None,        help="Path to pairwise compatibility .npy matrix")
-    parser.add_argument("--out_dir",            type=str, default="./outputs", help="Output directory")
-    parser.add_argument("--num_styles",         type=int, default=3,           help="Number of outfits to generate per seed item")
-    parser.add_argument("--min_items_per_slot", type=int, default=1,           help="Minimum items required per outfit slot")
-    parser.add_argument("--make_sample",        action="store_true",           help="Create sample input files and exit")
+    parser.add_argument("--items_csv",          type=str, default="./item_table.csv",         help="Path to item table CSV")
+    parser.add_argument("--sitd_id",            type=str,                                     help="Brand/site identifier")
+    parser.add_argument("--guidelines_json",    type=str, default="./outfit_guidelines.json", help="Path to outfit guideline JSON")
+    parser.add_argument("--compatibility_npy",  type=str, default=None,                       help="Path to pairwise compatibility .npy matrix")
+    parser.add_argument("--out_dir",            type=str, default="./outputs",                help="Output directory")
+    parser.add_argument("--num_styles",         type=int, default=3,                          help="Number of outfits to generate per seed item")
+    parser.add_argument("--min_items_per_slot", type=int, default=1,                          help="Minimum items required per outfit slot")
     return parser.parse_args()
 
 
 def main():
+    # current time
+    current_time  = datetime.now()
+    current_month = current_time.strftime('%m')
+    update_dates  = [(current_time + timedelta(days=-1 * d)).strftime('%Y-%m-%d') for d in range(7)]  # 7 최근 일주일간 업데이트 된 상품들에 대해서 업데이트
+
     args = parse_args()
-
-    if args.make_sample:
-        make_sample_files(args.out_dir)
-        return
-
-    if not args.items_csv or not args.guidelines_json:
-        raise ValueError("--items_csv and --guidelines_json are required unless --make_sample is used.")
 
     recommendations, failure_report, valid_items = run_batch(
         items_csv=args.items_csv,
@@ -461,7 +411,8 @@ def main():
         out_dir=args.out_dir,
         num_styles=args.num_styles,
         min_candidates_per_slot=args.min_candidates_per_slot,
-        month=current_month
+        month=current_month,
+        update_dates=update_dates
     )
 
     print("Batch completed")
