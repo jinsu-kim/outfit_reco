@@ -23,7 +23,11 @@ In production systems, item tables and outfit guidelines are usually loaded from
 ```text
 Backend-triggered Batch Request
     ↓
-Item Validation
+Redis-backed Job Queue
+    ↓
+GPU Worker Allocation
+    ↓
+Metadata Validation
     ↓
 Candidate Filtering
     ↓
@@ -31,4 +35,4 @@ Guideline-based Outfit Generation
     ↓
 Failure Logging
     ↓
-Batch Export
+Recommendation Export
