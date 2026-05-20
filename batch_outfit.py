@@ -199,15 +199,14 @@ def send_slack_alert(webhook_url: str, message: str) -> None:
         )
 
 def generate_outfits_for_seed(
-    seed_row: pd.Series,
-    items: pd.DataFrame,
-    guidelines: Dict[str, List[Dict[str, List[str]]]],
-    compatibility: np.ndarray,
-    item_index: Dict[str, int],
-    num_styles: int,
-    min_candidates_per_slot: int,
-    season: str,
-    ) -> Tuple[List[Dict[str, object]], List[Failure]]:
+        seed_row: pd.Series,
+        items: pd.DataFrame,
+        guidelines: Dict[str, List[Dict[str, List[str]]]],
+        compatibility: np.ndarray,
+        item_index: Dict[str, int],
+        num_styles: int,
+        min_candidates_per_slot: int,
+        season: str) -> Tuple[List[Dict[str, object]], List[Failure]]:
     """Generate multiple constrained outfit sets for one seed item."""
 
     seed_id        = str(seed_row["item_id"])
@@ -311,16 +310,17 @@ def build_failure_summary(failure_report: pd.DataFrame, max_examples: int = 5) -
     return "\n".join(lines)
 
 def run_batch(
-    items_csv: str | Path,
-    site_id: str,
-    guidelines_json: str | Path,
-    compatibility_npy: Optional[str | Path],
-    out_dir: str | Path,
-    num_styles: int = 3,
-    min_candidates_per_slot: int = 1,
-    month: Optional[int] = None,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        items_csv: str | Path,
+        site_id: str,
+        month: str,
+        guidelines_json: str | Path,
+        compatibility_npy: Optional[str | Path],
+        out_dir: str | Path,
+        num_styles: int = 3,
+        min_candidates_per_slot: int = 1,
+        ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run the full batch pipeline and write outputs."""
+
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -338,10 +338,7 @@ def run_batch(
         )
 
     current_season = get_season_from_month(month)
-    seed_items     = filter_outfit_seed(
-        valid_items,
-        current_season=current_season,
-    )
+    seed_items     = filter_outfit_seed(valid_items, current_season)
 
     guidelines = load_guidelines(guidelines_json)
     compatibility = np.load(compatibility_npy)
@@ -464,7 +461,7 @@ def main():
         out_dir=args.out_dir,
         num_styles=args.num_styles,
         min_candidates_per_slot=args.min_candidates_per_slot,
-        month=current_month,
+        month=current_month
     )
 
     print("Batch completed")
