@@ -18,24 +18,26 @@ current_month = current_time.strftime('%m')
 update_dates = [(current_time + timedelta(days=-1 * d)).strftime('%Y-%m-%d') for d in range(7)]  # 7 최근 일주일간 업데이트 된 상품들에 대해서 업데이트
 
 SLACK_WEBHOOK_URL = ""
-VALID_GENDERS     = {"MALE", "FEMALE", "UNISEX"}
-VALID_STATUS      = {"VALID"}
-VALID_SEASONS     = {"SPRING", "SUMMER", "AUTUMN", "WINTER"}
-REQUIRED_COLUMNS  = [
-        "item_id",
-        "site_id",
-        "created",
-        "updated",
-        "brand",
-        "category1",
-        "category2",
-        "gender",
-        "status",
-        "selling_status",
-        "season",
-        "image_url",
-        "product_name"
-        ]
+VALID_GENDERS        = {"MALE", "FEMALE", "UNISEX"}
+VALID_AGE            = {"ADULT", "JUNIOR", "CHILD"}
+VALID_STATUS         = {"True", "False"}
+VALID_SELLING_STATUS = {"DISPLAY", "NOT_DISPLAY"}
+VALID_SEASONS        = {"SPRING", "SUMMER", "AUTUMN", "WINTER"}
+REQUIRED_COLUMNS     = [
+                        "item_id",
+                        "site_id",
+                        "created",
+                        "updated",
+                        "brand",
+                        "category1",
+                        "category2",
+                        "gender",
+                        "status",
+                        "selling_status",
+                        "season",
+                        "image_url",
+                        "product_name"
+                        ]
 
 
 @dataclass(frozen=True)
@@ -56,35 +58,15 @@ def parse_seasons(value: str) -> List[str]:
     """Parse season strings such as '["SUMMER","AUTUMN"]' or 'SUMMER'."""
     if not value:
         return []
-    seasons = re.findall(r"SPRING|SUMMER|AUTUMN|WINTER", text)
+    seasons = re.findall(r"SPRING|SUMMER|AUTUMN|WINTER", value)
     return seasons
 
 
-# def select_representative_season(seasons: Sequence[str], month: int) -> str:
-#     """
-#     Select one season for guideline lookup.
-#
-#     In production this may depend on site-specific season calendars. For a public
-#     reconstruction, use the current month mapping when possible and otherwise the
-#     first available season.
-#     """
-#
-#     month_to_season = {
-#         3: "SPRING", 4: "SPRING", 5: "SPRING",
-#         6: "SUMMER", 7: "SUMMER", 8: "SUMMER",
-#         9: "AUTUMN", 10: "AUTUMN",
-#         11: "WINTER", 12: "WINTER", 1: "WINTER", 2: "WINTER",
-#     }
-#     current = month_to_season.get(month)
-#     if current in seasons:
-#         return current
-#     return seasons[0]
-
 def get_season_from_month(month: int) -> str:
     month_to_season = {
-        3: "SPRING", 4: "SPRING", 5: "SPRING",
-        6: "SUMMER", 7: "SUMMER", 8: "SUMMER",
-        9: "AUTUMN", 10: "AUTUMN",
+         3: "SPRING",  4: "SPRING", 5: "SPRING",
+         6: "SUMMER",  7: "SUMMER", 8: "SUMMER",
+         9: "AUTUMN", 10: "AUTUMN",
         11: "WINTER", 12: "WINTER", 1: "WINTER", 2: "WINTER",
     }
 
@@ -112,14 +94,24 @@ def validate_items(items: pd.DataFrame, site_id: str) -> Tuple[pd.DataFrame, pd.
     for col in ["item_id", "brand", "category1", "category2", "gender", "season", "image_url"]:
         mark_invalid(df[col].eq(""), f"missing_{col}")
 
-    mark_invalid(~df["gender"].isin(VALID_GENDERS),        "invalid_gender")
-    mark_invalid(~df["status"].isin(VALID_STATUS),         "invalid_status")
-    mark_invalid(~df["selling_status"].isin(VALID_STATUS), "invalid_selling_status")
+    mark_invalid(~df["gender"].isin(VALID_GENDERS),                "invalid_gender")
+    mark_invalid(~df["status"].isin(VALID_STATUS),                 "invalid_status")
+    mark_invalid(~df["selling_status"].isin(VALID_SELLING_STATUS), "invalid_selling_status")
 
     valid = df[valid_mask].reset_index(drop=True)
     invalid = pd.DataFrame(failure_rows).drop_duplicates() if failure_rows else pd.DataFrame(columns=["item_id", "name", "reason"])
     return valid, invalid
 
+def filter_outfit_seed(
+        valid_table: pd.DataFrame,
+        curr_season: str) -> pd.DataFrame:
+    """Select seed items for outfit generation."""
+
+    df         = valid_table.copy()
+    seed_items = df[(df['season'].contains(curr_season)) &
+                    (df['selling_status'] == 'DISPLAY')].reset_index(drop=True)
+
+    return seed_items
 
 def load_guidelines(path: str | Path) -> Dict[str, List[Dict[str, List[str]]]]:
     """Load outfit guidelines from JSON."""
@@ -137,12 +129,11 @@ def guideline_contains_seed(guide: Dict[str, List[str]], seed_category1: str, se
 
 
 def filter_candidates(
-    items: pd.DataFrame,
-    seed_row: pd.Series,
-    target_season: str,
-    allowed_category2: Iterable[str],
-    exclude_ids: Iterable[str],
-) -> pd.DataFrame:
+        items: pd.DataFrame,
+        seed_row: pd.Series,
+        target_season: str,
+        allowed_category2: Iterable[str],
+        exclude_ids: Iterable[str]) -> pd.DataFrame:
     """Filter candidates by season, gender, category, and exclusion list."""
     allowed_category2 = set(allowed_category2)
     exclude_ids = set(map(str, exclude_ids))
@@ -301,7 +292,7 @@ def build_failure_summary(failure_report: pd.DataFrame, max_examples: int = 5) -
 
     reason_counts = failure_report["reason"].value_counts()
 
-    lines = ["🚨 Outfit Batch Failure Summary", ""]
+    lines = ["Outfit Batch Failure", ""]
     lines.append(f"Total failures: {len(failure_report)}")
     lines.append("")
     lines.append("Failure counts by reason:")
@@ -347,19 +338,19 @@ def run_batch(
         )
 
     current_season = get_season_from_month(month)
-    candidate_items = filter_outfit_candidates(
+    seed_items     = filter_outfit_seed(
         valid_items,
         current_season=current_season,
     )
 
     guidelines = load_guidelines(guidelines_json)
     compatibility = np.load(compatibility_npy)
-    item_index = build_item_index(valid_items)
+    item_index = build_item_index(seed_items)
 
     recommendation_rows: List[Dict[str, object]] = []
     failures: List[Failure] = []
 
-    for _, seed_row in valid_items.iterrows():
+    for _, seed_row in seed_items.iterrows():
         recs, seed_failures = generate_outfits_for_seed(
             seed_row=seed_row,
             items=valid_items,
