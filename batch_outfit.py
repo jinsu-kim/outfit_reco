@@ -308,17 +308,19 @@ def build_failure_summary(failure_report: pd.DataFrame, max_examples: int = 5) -
 def run_batch(
         items_csv: str | Path,
         site_id: str,
-        month: str,
+        current_date: datetime,
         guidelines_json: str | Path,
         compatibility_npy: Optional[str | Path],
         out_dir: str | Path,
-        update_dates: List[str],
         num_styles: int = 3,
         min_candidates_per_slot: int = 1) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Run the full batch pipeline and write outputs."""
 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    current_month = current_date.strftime('%m')
+    update_dates  = [(current_date + timedelta(days=-1 * d)).strftime('%Y-%m-%d') for d in range(7)]
 
     raw_items = pd.read_csv(items_csv, dtype=str)
     valid_items, invalid_items = validate_items(raw_items, site_id)
@@ -333,7 +335,7 @@ def run_batch(
             "No valid items remain after metadata validation."
         )
 
-    current_season = get_season_from_month(month)
+    current_season = get_season_from_month(current_month)
     seed_items     = filter_outfit_seed(valid_items, current_season, update_dates)
 
     guidelines = load_guidelines(guidelines_json)
@@ -397,9 +399,7 @@ def parse_args():
 
 def main():
     # current time
-    current_time  = datetime.now()
-    current_month = current_time.strftime('%m')
-    update_dates  = [(current_time + timedelta(days=-1 * d)).strftime('%Y-%m-%d') for d in range(7)]  # 7 최근 일주일간 업데이트 된 상품들에 대해서 업데이트
+    current_date  = datetime.now()
 
     args = parse_args()
 
@@ -411,8 +411,7 @@ def main():
         out_dir=args.out_dir,
         num_styles=args.num_styles,
         min_candidates_per_slot=args.min_candidates_per_slot,
-        month=current_month,
-        update_dates=update_dates
+        current_date=current_date
     )
 
     print("Batch completed")
