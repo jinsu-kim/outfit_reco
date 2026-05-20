@@ -13,6 +13,9 @@ In production systems, recommendation pipelines must enforce:
 - valid outfit combination
 - brand/site isolation
 
+
+For reproducibility, this project uses CSV/JSON mock data.
+In production systems, item tables and outfit guidelines are usually loaded from internal databases.
 ---
 
 # Pipeline Flow
