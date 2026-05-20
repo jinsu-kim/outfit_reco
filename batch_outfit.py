@@ -56,7 +56,7 @@ def parse_seasons(value: str) -> List[str]:
     return seasons
 
 
-def get_season_from_month(month: int) -> str:
+def get_season_from_month(month: str) -> str:
     month_to_season = {
          3: "SPRING",  4: "SPRING", 5: "SPRING",
          6: "SUMMER",  7: "SUMMER", 8: "SUMMER",
@@ -398,8 +398,8 @@ def parse_args():
 
 
 def main():
-    # current time
-    current_date  = datetime.now()
+    # current date
+    current_date = datetime.now()
 
     args = parse_args()
 
