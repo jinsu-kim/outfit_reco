@@ -1,0 +1,53 @@
+from uuid import uuid4
+import json
+import redis
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+from batch_outfit import run_batch
+
+app = FastAPI()
+
+redis_client = redis.Redis(
+    host="redis",
+    port=6379,
+    db=0,
+    decode_responses=True,
+)
+
+QUEUE_NAME = "outfit_batch"
+
+
+class OutfitBatchRequest(BaseModel):
+    items_csv: str
+    site_id: str
+    guidelines_json: str
+    compatibility_npy: str
+    out_dir: str
+    num_styles: int = 3
+    min_candidates_per_slot: int = 1
+    current_date: str
+
+
+@app.post("/outfit-batch")
+def enqueue_batch(req: OutfitBatchRequest):
+    job_id = str(uuid4())
+
+    job = {
+        "job_id": job_id,
+        "status": "queued",
+        "params": req.model_dump(),
+    }
+
+    redis_client.hset(f"batch_job:{job_id}", mapping={
+        "status": "queued",
+        "params": json.dumps(req.model_dump(), ensure_ascii=False),
+    })
+
+    redis_client.rpush(QUEUE_NAME, json.dumps(job, ensure_ascii=False))
+
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "message": "Batch job has been queued.",
+    }
