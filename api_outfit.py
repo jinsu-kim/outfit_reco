@@ -51,3 +51,19 @@ def enqueue_batch(req: OutfitBatchRequest):
         "status": "queued",
         "message": "Batch job has been queued.",
     }
+
+@app.get("/outfit-batch/{job_id}")
+def get_job_status(job_id: str):
+    job_key = f"batch_job:{job_id}"
+    job = redis_client.hgetall(job_key)
+
+    if not job:
+        return {
+            "job_id": job_id,
+            "status": "not_found",
+        }
+
+    return {
+        "job_id": job_id,
+        "status": job.get("status"),
+    }
