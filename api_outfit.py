@@ -4,8 +4,6 @@ import redis
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from batch_outfit import run_batch
-
 app = FastAPI()
 
 redis_client = redis.Redis(
