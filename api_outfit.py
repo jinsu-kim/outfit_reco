@@ -3,6 +3,7 @@ import json
 import redis
 from fastapi import FastAPI
 from pydantic import BaseModel
+from datetime import datetime
 
 app = FastAPI()
 
@@ -14,7 +15,7 @@ redis_client = redis.Redis(
 )
 
 QUEUE_NAME = "outfit_batch"
-
+JOB_KEY_PREFIX = "outfit_batch_job"
 
 class OutfitBatchRequest(BaseModel):
     items_csv: str
@@ -31,10 +32,13 @@ class OutfitBatchRequest(BaseModel):
 def enqueue_batch(req: OutfitBatchRequest):
     job_id = str(uuid4())
 
+    params = req.model_dump()
+    params["current_date"] = datetime.now().isoformat()
+
     job = {
         "job_id": job_id,
         "status": "queued",
-        "params": req.model_dump(),
+        "params": params,
     }
 
     redis_client.hset(f"batch_job:{job_id}", mapping={
@@ -49,6 +53,7 @@ def enqueue_batch(req: OutfitBatchRequest):
         "status": "queued",
         "message": "Batch job has been queued.",
     }
+
 
 @app.get("/outfit-batch/{job_id}")
 def get_job_status(job_id: str):
