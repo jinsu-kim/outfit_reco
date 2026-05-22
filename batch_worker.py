@@ -17,7 +17,8 @@ redis_client = redis.Redis(
 )
 
 QUEUE_NAME = "outfit_batch"
-GPU_LOCK_KEY = "gpu_lock"
+JOB_KEY_PREFIX = "outfit_batch_job"
+
 VISIBLE_GPU = os.environ.get("CUDA_VISIBLE_DEVICES", "0")
 
 def is_gpu_available(max_memory_used: int = 2000, max_volatility = 10) -> bool:
@@ -30,29 +31,30 @@ def is_gpu_available(max_memory_used: int = 2000, max_volatility = 10) -> bool:
 
     return memory_used <= max_memory_used and gpu_util <= max_volatility
 
-def get_gpu_lock(job_id: str, gpu_id: int, ttl: int = 60 * 60) -> bool:
-
-    lock_key = f"{GPU_LOCK_KEY}:{gpu_id}"
-
-    return bool(
-        redis_client.set(lock_key, job_id, nx=True,ex=ttl)
-    )
 
 def update_job_status(job_id: str, status: str, **kwargs) -> None:
 
+    mapping = {"status":status}
+    mapping.update({
+        key: str(value)
+        for key, value in kwargs.items()
+        if value is not None
+    })
+
+    redis_client.hset(
+        f"{JOB_KEY_PREFIX}:{job_id}",
+        mapping=mapping,
+    )
+
 
 def main() -> None:
-    print("GPU worker started.")
+    print(f"GPU worker started. CUDA_VISIBLE_DEVICES={VISIBLE_GPU}")
 
     while True:
         # gpu status check
-        gpu_list = gpu_status_check()
-
-        if not gpu_list:
+        if not is_gpu_available():
             time.sleep(30)
             continue
-
-        gpu_id = gpu_list[0]
 
         # queued batch jobs
         result = redis_client.blpop(QUEUE_NAME, timeout=5)
@@ -67,9 +69,35 @@ def main() -> None:
         job_id = job["job_id"]
         params = job["params"]
 
-        gpu_id = gpu_status_check()
+        try:
+            update_job_status(job_id, "running", visible_gpu=VISIBLE_GPU)
+            current_date = datetime.fromisoformat(params["current_date"])
 
-        if gpu_id is None:
-            continue
+            recommendations, failure_report, valid_items = run_batch(
+                items_csv=params["items_csv"],
+                site_id=params["site_id"],
+                current_date=current_date,
+                guidelines_json=params["guidelines_json"],
+                compatibility_npy=params["compatibility_npy"],
+                out_dir=params["out_dir"],
+                num_styles=params["num_styles"],
+                min_candidates_per_slot=params["min_candidates_per_slot"],
+            )
 
+            update_job_status(
+                job_id,
+                "completed",
+                visible_gpu=VISIBLE_GPU,
+                result_path=params["out_dir"],
+                recommendation_count=len(recommendations),
+                failure_count=len(failure_report),
+                valid_item_count=len(valid_items),
+            )
+
+        except Exception as e:
+            update_job_status(job_id, "failed", visible_gpu=VISIBLE_GPU, error=repr(e))
+
+
+if __name__ == "__main__":
+    main()
 
