@@ -13,9 +13,13 @@ In production systems, recommendation pipelines must enforce:
 - valid outfit combination
 - brand/site isolation
 
+---
 
-For reproducibility, this project uses CSV/JSON mock data.
-In production systems, item tables and outfit guidelines are usually loaded from internal databases.
+* For reproducibility, this project uses CSV/JSON mock data.
+* In production systems, item tables and outfit guidelines are usually loaded from internal databases.
+* The compatibility matrix is assumed to be precomputed by a separate compatibility scoring module with GPUs.
+
+
 ---
 
 # Pipeline Flow
