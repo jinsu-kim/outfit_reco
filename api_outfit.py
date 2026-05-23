@@ -1,3 +1,4 @@
+import os
 from uuid import uuid4
 import json
 import redis
@@ -8,8 +9,8 @@ from datetime import datetime
 app = FastAPI()
 
 redis_client = redis.Redis(
-    host="redis",
-    port=6379,
+    host=os.getenv("REDIS_HOST", "localhost"),
+    port=int(os.getenv("REDIS_PORT", "6379")),
     db=0,
     decode_responses=True,
 )
