@@ -1,0 +1,46 @@
+services:
+  redis:
+    image: redis:7
+    container_name: outfit_redis
+    ports:
+      - "6379:6379"
+
+  api:
+    build: .
+    container_name: outfit_api
+    command: uvicorn api_outfit:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  worker0:
+    build: .
+    container_name: outfit_worker
+    command: python worker.py
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CUDA_VISIBLE_DEVICES=0
+
+  worker1:
+    build: .
+    container_name: outfit_worker
+    command: python worker.py
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CUDA_VISIBLE_DEVICES=1
