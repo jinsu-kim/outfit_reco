@@ -2,7 +2,6 @@ import os
 import json
 import time
 from datetime import datetime
-from typing import Optional, List
 
 import gpustat
 import redis

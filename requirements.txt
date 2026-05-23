@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+redis
+gpustat
+pandas
+numpy
+torch
+sckit-image
+scipy
