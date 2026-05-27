@@ -21,7 +21,7 @@ jobs:
         run: |
           docker compose up -d
 
-      - name: 실행 상태 확인
+      - name: Status Check
         run: |
           docker ps
 
