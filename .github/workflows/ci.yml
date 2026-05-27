@@ -10,14 +10,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 코드 가져오기
+      - name: clone repo.
         uses: actions/checkout@v4
 
-      - name: Docker Compose 빌드 테스트
+      - name: Build Docker Compose
         run: |
           docker compose build
 
-      - name: 컨테이너 실행 테스트
+      - name: Run Container
         run: |
           docker compose up -d
 
@@ -25,11 +25,11 @@ jobs:
         run: |
           docker ps
 
-      - name: 컨테이너 종료
+      - name: Stop Container
         run: |
           docker compose down
 
-      - name: EC2 서버 배포
+      - name: Deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.AWS_HOST }}
