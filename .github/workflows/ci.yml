@@ -1,0 +1,46 @@
+name: CI-CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 코드 가져오기
+        uses: actions/checkout@v4
+
+      - name: Docker Compose 빌드 테스트
+        run: |
+          docker compose build
+
+      - name: 컨테이너 실행 테스트
+        run: |
+          docker compose up -d
+
+      - name: 실행 상태 확인
+        run: |
+          docker ps
+
+      - name: 컨테이너 종료
+        run: |
+          docker compose down
+
+      - name: EC2 서버 배포
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/ubuntu/outfit_reco
+
+            git pull origin main
+
+            docker compose down
+
+            docker compose up -d --build
