@@ -31,6 +31,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CUDA_VISIBLE_DEVICES=0
+    profiles:
+      - gpu
 
   worker1:
     build: .
@@ -44,6 +46,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CUDA_VISIBLE_DEVICES=1
+    profiles:
+          - gpu
 
   worker2:
     build: .
@@ -57,3 +61,5 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CUDA_VISIBLE_DEVICES=2
+    profiles:
+      - gpu
