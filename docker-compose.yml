@@ -21,7 +21,7 @@ services:
 
   worker0:
     build: .
-    container_name: outfit_worker
+    container_name: outfit_worker0
     command: python worker.py
     depends_on:
       - redis
@@ -34,7 +34,20 @@ services:
 
   worker1:
     build: .
-    container_name: outfit_worker
+    container_name: outfit_worker1
+    command: python worker.py
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CUDA_VISIBLE_DEVICES=1
+
+  worker2:
+    build: .
+    container_name: outfit_worker2
     command: python worker.py
     depends_on:
       - redis
