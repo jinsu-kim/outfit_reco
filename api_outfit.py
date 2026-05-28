@@ -2,7 +2,7 @@ import os
 from uuid import uuid4
 import json
 import redis
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -71,3 +71,21 @@ def get_job_status(job_id: str):
         "job_id": job_id,
         "status": job.get("status"),
     }
+
+
+@app.get("/health")
+def health_check():
+    redis_ok = check_redis()
+
+    if not redis_ok:
+        raise HTTPException(status_code=503, detail="Redis unavailable")
+
+    return {"status": "ok"}
+
+
+def check_redis():
+    try:
+        redis_client.ping()
+        return True
+    except Exception:
+        return False
