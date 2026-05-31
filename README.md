@@ -1,6 +1,5 @@
 # Outfit Recommendation Batch Pipeline
 
----
 
 # Overview
 A batch pipeline that generates 3 outfit sets per seed item for fashion platform clients.  
