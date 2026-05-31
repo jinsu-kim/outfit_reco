@@ -6,7 +6,8 @@
 
 A batch pipeline that generates 3 outfit sets per seed item for fashion platform clients.  
 Each outfit consists of 5 categories: outer, top, bottom, shoes, and accessory.
----
+
+
 ## Challenge 1: Combinatorial Explosion
 
 ### Problem
@@ -19,7 +20,6 @@ I examined whether pair scores could serve as a proxy for full outfit scores.
 
 **Observation**: The top-scoring pair between the seed item (outer) and tops  
 consistently ranked highest in overall outfit score aggregation.  
-This pattern held across clients and item pools.
 
 This pattern held consistently across clients and item pools,
 so we limited scoring to the top 3 pairs only.
