@@ -56,3 +56,24 @@ The mapping UI was designed and implemented by PM, designer, and frontend team.
 My contribution: problem identification, architecture proposal, DB schema design, batch refactoring.
 
 **Result**: A single batch codebase now serves all clients. Developer involvement at onboarding eliminated.  
+
+---
+## Pipeline Flow
+```text
+Backend-triggered Batch Request
+    ↓
+Redis-backed Job Queue
+    ↓
+GPU Worker Allocation (auto-assigned to available slots)
+    ↓
+Metadata Validation
+    (season alignment / availability / brand isolation)
+    ↓
+Pair Score-based Candidate Filtering
+    - eliminates 4-level nested loop
+    ↓
+Guideline-based Outfit Generation
+    + (combination rules configured by client via admin page)
+    ↓
+Recommendation Export
+```
