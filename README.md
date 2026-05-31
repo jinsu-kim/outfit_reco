@@ -55,7 +55,7 @@ My contribution: problem identification, architecture proposal, DB schema design
 
 **Result**: A single batch codebase now serves all clients. Developer involvement at onboarding eliminated.  
 
----
+
 ## Pipeline Flow
 ```text
 Backend-triggered Batch Request
