@@ -6,6 +6,8 @@ A batch pipeline that generates 3 outfit sets per seed item for fashion platform
 Each outfit consists of 5 categories: outer, top, bottom, shoes, and accessory.
 <br>
 
+---
+
 ## Challenge 1: Combinatorial Explosion
 
 ### Problem
@@ -32,6 +34,8 @@ so we limited scoring to the top 3 pairs only.
 **Result**: Batch processing time reduced by ~67% (1/3 of original).
 <br>
 
+---
+
 ## Challenge 2: Per-client Codebase Fragmentation
 
 ### Problem
@@ -54,7 +58,9 @@ The mapping UI was designed and implemented by PM, designer, and frontend team.
 My contribution: problem identification, architecture proposal, DB schema design, batch refactoring.
 
 **Result**: A single batch codebase now serves all clients. Developer involvement at onboarding eliminated.  
+<br>
 
+---
 
 ## Pipeline Flow
 ```text
@@ -75,6 +81,8 @@ Guideline-based Outfit Generation
     ↓
 Recommendation Export
 ```
+<br>
+
 ---
 
 ## Production Considerations
