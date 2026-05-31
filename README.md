@@ -31,10 +31,9 @@ so we limited scoring to the top 3 pairs only.
 4. Aggregate scores → export 3 outfit sets
 
 **Result**: Batch processing time reduced by ~67% (1/3 of original).
-
 <br>
 
-### Challenge 2: Per-client Codebase Fragmentation
+## Challenge 2: Per-client Codebase Fragmentation
 
 ### Problem
 Each client had its own category taxonomy.  
