@@ -49,7 +49,7 @@ Fixing it in code would just produce better-organized duplication.
 Proposed a category mapping architecture at the service policy level:
 
 - Fixed macro-categories (outer, top, bottom, shoes, accessory) inside the system
-- Designed a DB schema to store client-specific subcategory mappings
+- Designed a DB schema to store client-specific subcategory mappings  and outfit combination rules, both configurable via admin page
 - Refactored batch code to reference only the DB, with no per-client branching
 
 The mapping UI was designed and implemented by PM, designer, and frontend team.  
