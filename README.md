@@ -77,3 +77,18 @@ Guideline-based Outfit Generation
     ↓
 Recommendation Export
 ```
+---
+
+## Production Considerations
+
+- **Season filtering**: excludes items with mismatched season tags
+- **Brand isolation**: item pool separated per client
+- **Availability check**: filters by stock and item status
+- **GPU slot management**: FIFO queue with auto-allocation to idle slots
+- **Failure logging**: records and tracks combination generation failures
+
+---
+
+## Tech Stack
+
+Python · PyTorch · FastAPI · Docker · Redis
