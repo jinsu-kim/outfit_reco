@@ -4,15 +4,8 @@
 
 # Overview
 
-Generating three outfit recommendations for a seed item.
-
-In production systems, recommendation pipelines must enforce:
-
-- season alignment
-- sellable item filtering
-- valid outfit combination
-- brand/site isolation
-
+A batch pipeline that generates 3 outfit sets per seed item for fashion platform clients.  
+Each outfit consists of 5 categories: outer, top, bottom, shoes, and accessory.
 ---
 
 * For reproducibility, this project uses CSV/JSON mock data.
