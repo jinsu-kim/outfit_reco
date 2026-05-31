@@ -5,9 +5,10 @@
 # Overview
 A batch pipeline that generates 3 outfit sets per seed item for fashion platform clients.  
 Each outfit consists of 5 categories: outer, top, bottom, shoes, and accessory.
-
+<br>
 
 ## Challenge 1: Combinatorial Explosion
+
 ### Problem
 With 20–40 items per category, a full search requires a 4-level nested loop,
 generating tens of thousands of combinations per request.
@@ -31,7 +32,7 @@ so we limited scoring to the top 3 pairs only.
 
 **Result**: Batch processing time reduced by ~67% (1/3 of original).
 
-
+<br>
 ## Challenge 2: Per-client Codebase Fragmentation
 
 ### Problem
