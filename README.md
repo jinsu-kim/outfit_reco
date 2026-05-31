@@ -1,4 +1,4 @@
-# Outfit Recommendation Batch Pipeline
+# Outfit Recommendation Batch
 
 
 # Overview
